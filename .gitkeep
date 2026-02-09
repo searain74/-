@@ -1,0 +1,124 @@
+ (cd "$(git rev-parse --show-toplevel)" && git apply --3way <<'EOF' 
+diff --git a/script.js b/script.js
+new file mode 100644
+index 0000000000000000000000000000000000000000..462123df3ab19c1c74263f7a435644cc7d1873bb
+--- /dev/null
++++ b/script.js
+@@ -0,0 +1,114 @@
++const gifts = [
++  "로맨틱 향수 세트",
++  "감성 무드등",
++  "프리미엄 립틴트",
++  "스타일리시 핸드백",
++  "스파 바디케어 세트",
++  "실크 파자마",
++  "주얼리 목걸이",
++  "인생샷 폴라로이드 카메라",
++  "꽃다발 bouquet",
++  "힐링 마사지권",
++];
++
++const message = document.getElementById("message");
++const shareButton = document.getElementById("share");
++const resetButton = document.getElementById("reset");
++const chests = Array.from(document.querySelectorAll(".chest"));
++const confettiCanvas = document.getElementById("confetti");
++const confettiCtx = confettiCanvas.getContext("2d");
++let assignedGifts = [];
++let confettiParticles = [];
++let confettiFrame = null;
++
++const resizeCanvas = () => {
++  confettiCanvas.width = window.innerWidth;
++  confettiCanvas.height = window.innerHeight;
++};
++
++const shuffle = (array) => {
++  const result = [...array];
++  for (let i = result.length - 1; i > 0; i -= 1) {
++    const j = Math.floor(Math.random() * (i + 1));
++    [result[i], result[j]] = [result[j], result[i]];
++  }
++  return result;
++};
++
++const resetGame = () => {
++  assignedGifts = shuffle(gifts);
++  chests.forEach((chest) => {
++    chest.classList.remove("opened");
++    chest.disabled = false;
++  });
++  message.textContent = "보물 상자를 열어 선물을 확인하세요!";
++};
++
++const launchConfetti = () => {
++  cancelAnimationFrame(confettiFrame);
++  confettiParticles = Array.from({ length: 160 }, () => ({
++    x: Math.random() * confettiCanvas.width,
++    y: Math.random() * confettiCanvas.height - confettiCanvas.height,
++    size: 6 + Math.random() * 6,
++    speed: 2 + Math.random() * 4,
++    color: `hsl(${Math.random() * 360}, 90%, 70%)`,
++    rotation: Math.random() * Math.PI,
++  }));
++
++  const tick = () => {
++    confettiCtx.clearRect(0, 0, confettiCanvas.width, confettiCanvas.height);
++    confettiParticles.forEach((particle) => {
++      particle.y += particle.speed;
++      particle.rotation += 0.1;
++      confettiCtx.save();
++      confettiCtx.translate(particle.x, particle.y);
++      confettiCtx.rotate(particle.rotation);
++      confettiCtx.fillStyle = particle.color;
++      confettiCtx.fillRect(-particle.size / 2, -particle.size / 2, particle.size, particle.size);
++      confettiCtx.restore();
++    });
++
++    confettiParticles = confettiParticles.filter((particle) => particle.y < confettiCanvas.height + 30);
++    if (confettiParticles.length > 0) {
++      confettiFrame = requestAnimationFrame(tick);
++    }
++  };
++
++  confettiFrame = requestAnimationFrame(tick);
++};
++
++const openChest = (index, chest) => {
++  if (chest.classList.contains("opened")) return;
++  chest.classList.add("opened");
++  chest.disabled = true;
++  const gift = assignedGifts[index];
++  const messageText = `축하합니다! 화려한 축복이 쏟아집니다 ✨\n당첨 선물: ${gift}`;
++  message.textContent = messageText;
++  launchConfetti();
++};
++
++const updateShareLink = () => {
++  const shareText = message.textContent.replace(/\s+/g, " ").trim();
++  const smsLink = `sms:?&body=${encodeURIComponent(shareText)}`;
++  shareButton.setAttribute("data-sms", smsLink);
++};
++
++shareButton.addEventListener("click", () => {
++  updateShareLink();
++  const smsLink = shareButton.getAttribute("data-sms");
++  if (smsLink) {
++    window.location.href = smsLink;
++  }
++});
++
++resetButton.addEventListener("click", () => {
++  resetGame();
++});
++
++chests.forEach((chest, index) => {
++  chest.addEventListener("click", () => openChest(index, chest));
++});
++
++window.addEventListener("resize", resizeCanvas);
++resizeCanvas();
++resetGame();
+ 
+EOF
+)
